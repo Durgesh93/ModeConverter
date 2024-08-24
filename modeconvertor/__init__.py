@@ -8,34 +8,20 @@ from collections import deque
 
 
 class Converter:
-    """
-    A class to perform various transformations and computations on video sequences and coordinates.
-    """
-
     def __init__(self, anchor_idx, movies, SLcoords, W=64, SR=1, num_pts=None, A=0, S=0, R=0):
         """
-        Initialize the Converter class with the given parameters.
+        Initializes the Converter class with the given parameters.
 
         Parameters:
-        -----------
-        anchor_idx : int or list of int
-            Indices of the anchor points.
-        movies : numpy.ndarray
-            The movie clips array.
-        SLcoords : numpy.ndarray
-            The coordinates of SL points.
-        W : int, optional
-            The window size for clipping, by default 64.
-        SR : int, optional
-            The stride for shifting, by default 1.
-        num_pts : int, optional
-            The number of points to sample, by default None.
-        A : int or list of int, optional
-            Anchor shift values, by default 0.
-        S : int or list of int, optional
-            Shift values for perturbation, by default 0.
-        R : int or list of int, optional
-            Rotation values for perturbation, by default 0.
+        - anchor_idx (int or list of int): Indices of the anchor points.
+        - movies (numpy.ndarray): The movie clips array.
+        - SLcoords (numpy.ndarray): The coordinates of SL points.
+        - W (int, optional): The window size for clipping (default is 64).
+        - SR (int, optional): The stride for shifting (default is 1).
+        - num_pts (int, optional): The number of points to sample (default is None).
+        - A (int or list of int, optional): Anchor shift values (default is 0).
+        - S (int or list of int, optional): Shift values for perturbation (default is 0).
+        - R (int or list of int, optional): Rotation values for perturbation (default is 0).
         """
         self.is_single_item = self._is_single_item(SLcoords)
         shape = movies.shape
@@ -55,36 +41,25 @@ class Converter:
 
     def _is_single_item(self, coords):
         """
-        Check if the input coordinates represent a single item.
+        Checks if the input coordinates are a single item (2D array).
 
         Parameters:
-        -----------
-        coords : numpy.ndarray
-            The input coordinates.
+        - coords (numpy.ndarray): Coordinates to check.
 
         Returns:
-        --------
-        bool
-            True if the input is a single item, False otherwise.
+        - bool: True if coordinates are a single item, False otherwise.
         """
-        if coords.ndim == 2:
-            return True
-        else:
-            return False
+        return coords.ndim == 2
 
     def _clip_and_shift_anchor(self, movies):
         """
-        Clip and shift the movie frames based on the anchor indices.
+        Clips and shifts movie clips based on anchor points.
 
         Parameters:
-        -----------
-        movies : numpy.ndarray
-            The movie clips array.
+        - movies (numpy.ndarray): The movie clips array.
 
         Returns:
-        --------
-        numpy.ndarray
-            The clipped and shifted movie clips.
+        - numpy.ndarray: The clipped and shifted movie clips.
         """
         window_size = self.W
         stride = self.SR
@@ -122,17 +97,13 @@ class Converter:
 
     def _process(self, *args):
         """
-        Process the input arguments to ensure they are in the correct format.
+        Processes input arguments to ensure they are in the correct format.
 
         Parameters:
-        -----------
-        *args : tuple
-            The input arguments to process.
+        - *args: Variable number of arguments to process.
 
         Returns:
-        --------
-        tuple
-            The processed arguments.
+        - list: Processed arguments.
         """
         processed = []
         if self.is_single_item:
@@ -152,19 +123,14 @@ class Converter:
 
     def _mimg_single(self, clip, per_pts):
         """
-        Generate a manipulated image for a single clip.
+        Generates a manipulated image for a single clip using given points.
 
         Parameters:
-        -----------
-        clip : numpy.ndarray
-            The movie clip.
-        per_pts : numpy.ndarray
-            The perturbation points.
+        - clip (numpy.ndarray): The movie clip to process.
+        - per_pts (numpy.ndarray): Perturbation points.
 
         Returns:
-        --------
-        numpy.ndarray
-            The manipulated image.
+        - numpy.ndarray: The manipulated image.
         """
         q, h, w = clip.shape[-3:]
         if self.is_single_item and len(clip.shape) == 4:
@@ -189,17 +155,13 @@ class Converter:
 
     def _compute_SL_single(self, coords):
         """
-        Compute the SL (spatial line) for a single set of coordinates.
+        Computes the Spatial Line (SL) and its coefficients for given coordinates.
 
         Parameters:
-        -----------
-        coords : numpy.ndarray
-            The input coordinates.
+        - coords (numpy.ndarray): Coordinates to compute SL for.
 
         Returns:
-        --------
-        tuple
-            A tuple containing the SL points and the coefficients.
+        - tuple: (probability points, coefficients)
         """
         ref_coords = coords[:, [0, -1]]
         vb, valid = view_bounds(ref_coords, mode='coord', viewport=self.viewport).get()
@@ -217,12 +179,10 @@ class Converter:
 
     def refSL(self):
         """
-        Generate reference SL (spatial line) points for the given coordinates.
+        Generates reference SL (spatial line) points for the original coordinates.
 
         Returns:
-        --------
-        numpy.ndarray
-            The reference SL points.
+        - numpy.ndarray: The reference SL points.
         """
         SL_list = []
         for coords in self.coords:
@@ -232,12 +192,10 @@ class Converter:
 
     def perSL(self):
         """
-        Generate perturbed SL (spatial line) points for the given coordinates.
+        Generates perturbed SL (spatial line) points for the perturbed coordinates.
 
         Returns:
-        --------
-        numpy.ndarray
-            The perturbed SL points.
+        - numpy.ndarray: The perturbed SL points.
         """
         SL_list = []
         for coords in self.pcoords:
@@ -247,12 +205,10 @@ class Converter:
 
     def coeffs(self):
         """
-        Generate coefficients for the given coordinates.
+        Generates coefficients for the perturbed SL (spatial line) points.
 
         Returns:
-        --------
-        numpy.ndarray
-            The coefficients for the given coordinates.
+        - numpy.ndarray: The coefficients.
         """
         coeff_list = []
         for coords in self.pcoords:
@@ -262,16 +218,111 @@ class Converter:
 
     def _create_nn_single(self, SL):
         """
-        Create a nearest neighbor model for the given SL points.
+        Creates a nearest neighbors model for given SL points.
 
         Parameters:
-        -----------
-        SL : numpy.ndarray
-            The SL points.
+        - SL (numpy.ndarray): Spatial line points.
 
         Returns:
-        --------
-        sklearn.neighbors.NearestNeighbors
-            The trained NearestNeighbors model.
+        - sklearn.neighbors.NearestNeighbors: The nearest neighbors model.
         """
         return NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(SL)
+
+    def _perturb_coords(self):
+        """
+        Perturbs the coordinates by applying shifts and rotations.
+
+        Returns:
+        - numpy.ndarray: The perturbed coordinates.
+        """
+        pcoords_l = []
+        for coords, shift, rotate in zip(self.coords, self.S, self.R):
+            pcoords = []
+            for co in coords:
+                pivot = co.mean(axis=-1, keepdims=True)
+                angle_radians = math.radians(rotate)
+                rotation_matrix = np.array([[math.cos(angle_radians), -math.sin(angle_radians)],
+                                            [math.sin(angle_radians), math.cos(angle_radians)]])
+                pcoords.append(np.dot(co - pivot, rotation_matrix) + pivot + shift)
+            pcoords = np.stack(pcoords, axis=0)
+            pcoords_l.append(pcoords)
+        pcoords_l = np.stack(pcoords_l, axis=0)
+        return pcoords_l
+
+    def mcoords(self):
+        """
+        Generates manipulated coordinates based on perturbed SL and anchor points.
+
+        Returns:
+        - numpy.ndarray: The manipulated coordinates.
+        """
+        m_coords = []
+        for coords, aidx, a in zip(self.pcoords, self.Aidx, self.A):
+            SL, coeffs = self._compute_SL_single(coords)
+            nn = self._create_nn_single(SL)
+            d, i = nn.kneighbors(coords)
+            m_ycoords_s = i.ravel()
+            m_xcoords_s = np.full_like(m_ycoords_s, aidx)
+            m_coords_s = np.stack([m_ycoords_s, m_xcoords_s], axis=-1)
+            m_coords.append(m_coords_s)
+        m_coords = np.stack(m_coords, axis=0)
+        return m_coords.squeeze(axis=0)
+
+    def mSL_xloc(self):
+        """
+        Gets the x-location of manipulated SL.
+
+        Returns:
+        - int or numpy.ndarray: The x-location of manipulated SL.
+        """
+        if self.is_single_item:
+            return int(self.Aidx)
+        else:
+            return self.Aidx
+
+    def mSL(self):
+        """
+        Generates manipulated SL (spatial line) coordinates based on anchor indices.
+
+        Returns:
+        - numpy.ndarray: The manipulated SL coordinates.
+        """
+        m_SL = []
+        for aidx in self.Aidx:
+            m_SLycoords = np.arange(0, self.num_pts)[::self.num_pts // 10]
+            m_SLxcoords = np.full_like(m_SLycoords, aidx)
+            m_SLcoords = np.stack([m_SLycoords, m_SLxcoords], axis=-1)
+            m_SL.append(m_SLcoords)
+        return np.stack(m_SL, axis=0).squeeze(axis=0)
+
+    def pred_bcoords(self, pred_mcoords):
+        """
+        Predicts the original coordinates from the manipulated coordinates.
+
+        Parameters:
+        - pred_mcoords (numpy.ndarray): The manipulated coordinates to predict from.
+
+        Returns:
+        - numpy.ndarray: The predicted original coordinates.
+        """
+        pred_mcoords, = self._process(pred_mcoords)
+        b_coords = []
+        for y_pred_s, bpcoords in zip(pred_mcoords.astype(np.uint16)[:, :, 0], self.pcoords):
+            SL, coeffs = self._compute_SL_single(bpcoords)
+            b_coords_s = SL[y_pred_s]
+            b_coords.append(b_coords_s)
+        return np.stack(b_coords, axis=0).squeeze(axis=0)
+
+    def amm(self):
+        """
+        Applies the manipulated SL coordinates to the movie clips to generate manipulated images.
+
+        Returns:
+        - numpy.ndarray: The manipulated images.
+        """
+        m_img = []
+        for clip, pcoords in zip(self.clips, self.pcoords):
+            SL, coeffs = self._compute_SL_single(pcoords)
+            m_img.append(self._mimg_single(clip, SL))
+        m_img = np.stack(m_img, axis=0)
+        return m_img.squeeze(axis=0)
