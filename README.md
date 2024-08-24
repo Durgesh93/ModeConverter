@@ -62,7 +62,7 @@ Generates coefficients for the given coordinates.
 - **Returns:**
 - numpy.ndarray: The AMM image created from the clip.
 
-## `MoviePlayer` Class
+## `animation.MoviePlayer` Class
 
 The `MoviePlayer` class provides functionality to play and visualize video frames using Matplotlib.
 
@@ -114,7 +114,7 @@ Finds the right segment of the cone and rotates it counterclockwise.
 - **Returns:**
   - `numpy.ndarray`: Coordinates of the right segment.
 
-## `animation.read_grayscale(file_path)`
+## `movie.read_grayscale(file_path)`
 
 Reads a grayscale image or video file and returns it as a NumPy array.
 
