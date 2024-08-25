@@ -9,12 +9,12 @@ The `Converter` class is designed to perform transformations and computations on
 Initializes the `Converter` class with the given parameters.
 
 - **Parameters:**
-- anchor_idx (int or list of int): Indices of the anchor points.
-- movies (numpy.ndarray): The movie clips array.
-- SLcoords (numpy.ndarray): The coordinates of SL points.
+- anchor_idx (int or list of int): location index of the anchor frame.
+- movies (numpy.ndarray): BxNxHxW B movies each containing N frames or NxHXW or a single movie containing N frames.
+- SLcoords (numpy.ndarray): The coordinates of SL(Scanline) points.
 - W (int, optional): The window size for clipping (default is 64).
 - SR (int, optional): The stride for shifting (default is 1).
-- num_pts (int, optional): The number of points to sample (default is None).
+- num_pts (int, optional): The number of points to sample along the SL (default is None).
 - A (int or list of int, optional): Anchor shift within in the generated clip (default is 0).
 - S (int or list of int, optional): Shift values for given scanline (default is 0).
 - R (int or list of int, optional): Rotation values for given scanline (default is 0).
@@ -46,8 +46,8 @@ Generates coefficients for the given coordinates.
   - `numpy.ndarray`: The AMM coordinates.
 
 
-###  `mSL_xloc(self)`
-   - Gets the x-location of x-location of scanline in the generated AMM image from the clip.
+###  `mSLx(self)`
+   - Gets the x-location  of the scanline in the generated AMM image from the clip.
 
 ### `mSL(self)`
   - `numpy.ndarray`: The SL coordinates in the AMM image.
