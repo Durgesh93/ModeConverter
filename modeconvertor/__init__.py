@@ -265,13 +265,14 @@ class Converter:
         Returns:
         - numpy.ndarray: The manipulated coordinates.
         """
+        SL_x = self.mSLx()
         m_coords = []
-        for coords, aidx, a in zip(self.pcoords, self.Aidx, self.A):
+        for coords, x_loc in zip(self.pcoords, SL_x):
             SL, coeffs = self._compute_SL_single(coords)
             nn = self._create_nn_single(SL)
             d, i = nn.kneighbors(coords)
             m_ycoords_s = i.ravel()
-            m_xcoords_s = np.full_like(m_ycoords_s, aidx)
+            m_xcoords_s = np.full_like(m_ycoords_s, x_loc)
             m_coords_s = np.stack([m_ycoords_s, m_xcoords_s], axis=-1)
             m_coords.append(m_coords_s)
         m_coords = np.stack(m_coords, axis=0)
