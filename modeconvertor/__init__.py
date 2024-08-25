@@ -8,7 +8,7 @@ from collections import deque
 
 
 class Converter:
-    def __init__(self, anchor_idx, movies, SLcoords, W=64, SR=1, num_pts=None, A=0, S=0, R=0):
+    def __init__(self, anchor_idx, SLcoords,movies, W=64, SR=1, num_pts=None, A=0, S=0, R=0):
         """
         Initializes the Converter class with the given parameters.
 
@@ -23,23 +23,23 @@ class Converter:
         - S (int or list of int, optional): Shift values for perturbation (default is 0).
         - R (int or list of int, optional): Rotation values for perturbation (default is 0).
         """
-        self.is_single_item = self._is_single_item(SLcoords)
-        shape = movies.shape
-        self.viewport = (0, 0, shape[-1] - 1, shape[-2] - 1)
+        self.SLcoords       = SLcoords
+        self.is_single_item = self._is_single_item()
+        shape               = movies.shape
+        self.viewport       = (0, 0, shape[-1] - 1, shape[-2] - 1)
         if num_pts is None:
-            self.num_pts = max(shape[-1], shape[-2])
+            self.num_pts    = max(shape[-1], shape[-2])
         else:
-            self.num_pts = num_pts - 1
-        self.W = W
-        self.SR = SR
+            self.num_pts    = num_pts - 1
+        self.W              = W
+        self.SR             = SR
+        self.Aidx, self.A   = self._process(anchor_idx, A)
+        self.clips          = self._clip_and_shift_anchor(*self._process(movies))
+        self.coords,        = self._process(SLcoords)
+        self.S, self.R      = self._process(S, R)
+        self.pcoords        = self._perturb_coords()
 
-        self.Aidx, self.A = self._process(anchor_idx, A)
-        self.clips = self._clip_and_shift_anchor(*self._process(movies))
-        self.coords, = self._process(SLcoords)
-        self.S, self.R = self._process(S, R)
-        self.pcoords = self._perturb_coords()
-
-    def _is_single_item(self, coords):
+    def _is_single_item(self):
         """
         Checks if the input coordinates are a single item (2D array).
 
@@ -49,7 +49,7 @@ class Converter:
         Returns:
         - bool: True if coordinates are a single item, False otherwise.
         """
-        return coords.ndim == 2
+        return self.SLcoords.ndim == 2
 
     def _clip_and_shift_anchor(self, movies):
         """
@@ -64,8 +64,7 @@ class Converter:
         window_size = self.W
         stride = self.SR
         clip_l = []
-        Aidx = []
-
+    
         if window_size % 2 == 0:
             shiftl = window_size // 2
             shiftr = window_size // 2
@@ -91,8 +90,6 @@ class Converter:
             window = window_l[::-1] + window_r
             clip = movie.take(window, axis=-3)
             clip_l.append(clip)
-            Aidx.append(np.array(len(window) // 2 + anchor_shift, dtype='int'))
-        self.Aidx = np.stack(Aidx, axis=0)
         return np.stack(clip_l, axis=0)
 
     def _process(self, *args):
@@ -110,14 +107,14 @@ class Converter:
             for arg in args:
                 if isinstance(arg, np.ndarray):
                     processed.append(arg[np.newaxis])
-                elif isinstance(arg, int):
-                    processed.append(np.array([arg], dtype='int'))
-                elif isinstance(arg, float):
-                    processed.append(np.array([arg], dtype='float'))
+                elif isinstance(arg, (int,float)):
+                    processed.append(np.array([arg]))
         else:
             for arg in args:
                 if isinstance(arg, list):
                     arg = np.array(arg)
+                elif isinstance(arg, (int,float)):
+                    arg = np.full(self.SLcoords.shape[0],arg)
                 processed.append(arg)
         return processed
 
@@ -188,7 +185,11 @@ class Converter:
         for coords in self.coords:
             SL, _ = self._compute_SL_single(coords)
             SL_list.append(SL[::self.num_pts // 10])
-        return np.stack(SL_list, axis=0).squeeze(axis=0)
+        SL_list = np.stack(SL_list, axis=0)
+        if self.is_single_item:
+            return SL_list.squeeze(axis=0)
+        else:
+            return SL_list
 
     def perSL(self):
         """
@@ -201,7 +202,11 @@ class Converter:
         for coords in self.pcoords:
             SL, _ = self._compute_SL_single(coords)
             SL_list.append(SL[::self.num_pts // 10])
-        return np.stack(SL_list, axis=0).squeeze(axis=0)
+        SL_list = np.stack(SL_list, axis=0)
+        if self.is_single_item:
+            return SL_list.squeeze(axis=0)
+        else:
+            return SL_list
 
     def coeffs(self):
         """
@@ -214,7 +219,11 @@ class Converter:
         for coords in self.pcoords:
             _, coeff = self._compute_SL_single(coords)
             coeff_list.append(coeff)
-        return np.stack(coeff_list, axis=0).squeeze(axis=0)
+        coeff_list=np.stack(coeff_list, axis=0)
+        if self.is_single_item:
+            return coeff_list.squeeze(axis=0)
+        else:
+            return coeff_list
 
     def _create_nn_single(self, SL):
         """
@@ -266,19 +275,27 @@ class Converter:
             m_coords_s = np.stack([m_ycoords_s, m_xcoords_s], axis=-1)
             m_coords.append(m_coords_s)
         m_coords = np.stack(m_coords, axis=0)
-        return m_coords.squeeze(axis=0)
+        if self.is_single_item:
+            return m_coords.squeeze(axis=0)
+        else:
+            return m_coords
 
-    def mSL_xloc(self):
+    def mSLx(self):
         """
         Gets the x-location of manipulated SL.
 
         Returns:
         - int or numpy.ndarray: The x-location of manipulated SL.
         """
+        SL_x = []
+        for anchor_shift in self.A:
+            SL_x.append(self.W//2+anchor_shift)
+
+        SL_x = np.stack(SL_x,axis=0)
         if self.is_single_item:
-            return int(self.Aidx)
+            return SL_x.squeeze(axis=0)
         else:
-            return self.Aidx
+            return SL_x
 
     def mSL(self):
         """
@@ -293,7 +310,11 @@ class Converter:
             m_SLxcoords = np.full_like(m_SLycoords, aidx)
             m_SLcoords = np.stack([m_SLycoords, m_SLxcoords], axis=-1)
             m_SL.append(m_SLcoords)
-        return np.stack(m_SL, axis=0).squeeze(axis=0)
+        m_SL=np.stack(m_SL, axis=0)
+        if self.is_single_item:
+            return m_SL.squeeze(axis=0)
+        else:
+            return m_SL
 
     def pred_bcoords(self, pred_mcoords):
         """
@@ -311,8 +332,18 @@ class Converter:
             SL, coeffs = self._compute_SL_single(bpcoords)
             b_coords_s = SL[y_pred_s]
             b_coords.append(b_coords_s)
-        return np.stack(b_coords, axis=0).squeeze(axis=0)
+        b_coords = np.stack(b_coords, axis=0)
+        if self.is_single_item:
+            return b_coords.squeeze(axis=0)
+        else:
+            return b_coords
 
+    def bclip(self):
+        if self.is_single_item:
+            return self.clips.squeeze(axis=0)
+        else:
+            return self.clips
+    
     def amm(self):
         """
         Applies the manipulated SL coordinates to the movie clips to generate manipulated images.
@@ -325,4 +356,7 @@ class Converter:
             SL, coeffs = self._compute_SL_single(pcoords)
             m_img.append(self._mimg_single(clip, SL))
         m_img = np.stack(m_img, axis=0)
-        return m_img.squeeze(axis=0)
+        if self.is_single_item:
+            return m_img.squeeze(axis=0)
+        else:
+            return m_img
