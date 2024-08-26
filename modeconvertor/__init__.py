@@ -295,7 +295,6 @@ class Converter:
         SL_x = []
         for anchor_shift in self.A:
             SL_x.append(self.W//2+anchor_shift)
-
         SL_x = np.stack(SL_x,axis=0)
         if self.is_single_item:
             return SL_x.squeeze(axis=0)
@@ -309,10 +308,16 @@ class Converter:
         Returns:
         - numpy.ndarray: The manipulated SL coordinates.
         """
+
+        SL_x = []
+        for anchor_shift in self.A:
+            SL_x.append(self.W//2+anchor_shift)
+        SL_x = np.stack(SL_x,axis=0)
+
         m_SL = []
-        for aidx in self.Aidx:
+        for slx in SL_x:
             m_SLycoords = np.arange(0, self.num_pts)[::self.num_pts // 10]
-            m_SLxcoords = np.full_like(m_SLycoords, aidx)
+            m_SLxcoords = np.full_like(m_SLycoords, slx)
             m_SLcoords = np.stack([m_SLycoords, m_SLxcoords], axis=-1)
             m_SL.append(m_SLcoords)
         m_SL=np.stack(m_SL, axis=0)
