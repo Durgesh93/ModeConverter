@@ -1,7 +1,6 @@
 from modeconvertor.movie import read_grayscale
 from modeconvertor import Converter, Cone
 import matplotlib.pyplot as plt
-import numpy as np
 
 def save_m_mode_image(video, output_file):
     c = Cone(video)

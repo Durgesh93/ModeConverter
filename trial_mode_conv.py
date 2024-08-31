@@ -2,7 +2,6 @@ from modeconvertor.animation import test_movie
 from modeconvertor.movie import read_grayscale
 from modeconvertor.animation import MoviePlayer
 from modeconvertor import Converter,Cone
-import matplotlib.pyplot as plt
 import numpy as np
 
 
